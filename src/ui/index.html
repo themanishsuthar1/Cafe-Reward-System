@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artisan Café — Staff Portal</title>
+  <meta name="description" content="Artisan Café Counter POS — Staff loyalty points management with immutable ledger.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- AUTH SCREEN (shown when not logged in)                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="auth-screen" class="auth-screen hidden">
+    <div class="auth-backdrop"></div>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-logo">☕</div>
+        <h1 class="auth-title">Artisan Café</h1>
+        <p class="auth-subtitle">Staff Portal — Loyalty & POS System</p>
+      </div>
+
+      <!-- Tab Toggle -->
+      <div class="auth-tabs" id="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-login" class="auth-form" onsubmit="return false;">
+        <div class="auth-form-group">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" placeholder="e.g. staff_ravi" autocomplete="username" required>
+        </div>
+        <div class="auth-form-group">
+          <label for="login-password">Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="toggle-pw" onclick="togglePw('login-password', this)">👁</button>
+          </div>
+        </div>
+        <div id="login-error" class="auth-error hidden"></div>
+        <button type="submit" id="btn-login" class="btn btn-primary btn-block auth-btn">
+          Sign In to POS
+        </button>
+        <p class="auth-hint">No account? <a href="#" onclick="switchAuthTab('register')">Register here</a></p>
+      </form>
+
+      <!-- Register Form -->
+      <form id="form-register-auth" class="auth-form hidden" onsubmit="return false;">
+        <div class="auth-form-group">
+          <label for="reg-auth-username">Username</label>
+          <input type="text" id="reg-auth-username" placeholder="e.g. staff_priya" autocomplete="username" required minlength="3">
+        </div>
+        <div class="auth-form-group">
+          <label for="reg-auth-email">Email</label>
+          <input type="email" id="reg-auth-email" placeholder="priya@cafe.in" autocomplete="email" required>
+        </div>
+        <div class="auth-form-group">
+          <label for="reg-auth-password">Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="reg-auth-password" placeholder="Min 6 characters" autocomplete="new-password" required minlength="6">
+            <button type="button" class="toggle-pw" onclick="togglePw('reg-auth-password', this)">👁</button>
+          </div>
+        </div>
+        <div id="register-error" class="auth-error hidden"></div>
+        <div id="register-success" class="auth-success hidden"></div>
+        <button type="submit" id="btn-register-auth" class="btn btn-primary btn-block auth-btn">
+          Create Staff Account
+        </button>
+        <p class="auth-hint">Already have an account? <a href="#" onclick="switchAuthTab('login')">Sign in</a></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- POS APP (shown after login)                                            -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="pos-app" class="app-container hidden">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">☕</div>
+        <div>
+          <h1>Artisan Café Counter</h1>
+          <p class="subtitle">Immutable Ledger Loyalty & Tier POS System</p>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="user-badge" id="user-badge">
+          <span class="user-icon">👤</span>
+          <span id="logged-in-user">Staff</span>
+          <span class="user-role-tag" id="user-role-tag">staff</span>
+        </div>
+        <div class="header-status">
+          <span class="status-indicator"></span>
+          <span id="terminal-badge">Terminal #1 (Counter POS)</span>
+        </div>
+        <button id="btn-logout" class="btn btn-outline btn-sm" onclick="logout()">⏻ Logout</button>
+      </div>
+    </header>
+
+    <!-- Main Grid Layout -->
+    <main class="main-content">
+      <!-- Left Column: Search & Member Card -->
+      <section class="panel search-panel">
+        <div class="panel-header">
+          <h2>1. Member Lookup</h2>
+          <button id="btn-open-register" class="btn btn-secondary btn-sm">+ New Member</button>
+        </div>
+
+        <div class="search-box">
+          <input type="text" id="input-search" placeholder="Type phone number or member name..." autocomplete="off">
+          <span class="search-icon">🔍</span>
+        </div>
+
+        <div id="search-results-dropdown" class="dropdown-list hidden"></div>
+
+        <!-- Selected Member Details -->
+        <div id="member-card" class="member-card empty-state">
+          <div class="empty-icon">📇</div>
+          <p>Search or select a member to view live balance and start transaction</p>
+        </div>
+      </section>
+
+      <!-- Center Column: Transaction Actions -->
+      <section class="panel action-panel">
+        <!-- Record Purchase Card -->
+        <div class="card purchase-card">
+          <div class="card-header">
+            <h3>🛒 2. Record Purchase</h3>
+            <span class="badge badge-accent" id="active-multiplier-badge">1.0× Base Rate</span>
+          </div>
+
+          <form id="form-purchase" onsubmit="return false;">
+            <div class="form-group">
+              <label for="input-amount">Amount Spent (₹)</label>
+              <div class="input-with-symbol">
+                <span class="currency-symbol">₹</span>
+                <input type="number" id="input-amount" step="0.01" min="0.01" placeholder="750.00" required disabled>
+              </div>
+            </div>
+
+            <div class="points-preview">
+              <span>Points to Earn:</span>
+              <strong id="preview-points">0 pts</strong>
+            </div>
+
+            <button type="submit" id="btn-record-purchase" class="btn btn-primary btn-block" disabled>
+              ⚡ Confirm Purchase & Earn Points
+            </button>
+          </form>
+        </div>
+
+        <!-- Rewards Catalog Card -->
+        <div class="card reward-card">
+          <div class="card-header">
+            <h3>🎁 3. Redeem Reward</h3>
+            <span class="subtitle-sm">Server-side validated balance check</span>
+          </div>
+
+          <div id="rewards-grid" class="rewards-grid">
+            <p class="placeholder-text">Select a member to view reward eligibility</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Audit Ledger & History -->
+      <section class="panel history-panel">
+        <div class="panel-header">
+          <h2>📜 4. Ledger & Automation</h2>
+          <div style="display:flex; gap:6px;">
+            <button id="btn-advance-clock" class="btn btn-secondary btn-sm">⏰ Advance 90 Days</button>
+            <button id="btn-view-outbox" class="btn btn-secondary btn-sm">🔔 Outbox</button>
+            <button id="btn-reconcile" class="btn btn-outline btn-sm" disabled>🔍 Reconcile</button>
+          </div>
+        </div>
+
+        <div id="reconcile-banner" class="reconcile-banner hidden"></div>
+
+        <div class="table-container">
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Delta</th>
+                <th>Tier</th>
+                <th>Idempotency Key</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-rows">
+              <tr>
+                <td colspan="5" class="empty-table">No transaction history loaded</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Register Member Modal (POS) -->
+  <div id="modal-register" class="modal-backdrop hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Register New Member</h3>
+        <button id="btn-close-register" class="btn-icon">&times;</button>
+      </div>
+      <form id="form-register">
+        <div class="form-group">
+          <label for="reg-name">Full Name</label>
+          <input type="text" id="reg-name" placeholder="e.g. Priya Sharma" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-phone">Phone Number</label>
+          <input type="text" id="reg-phone" placeholder="e.g. 98765-43210" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-register" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Outbox Notification Monitor Modal -->
+  <div id="modal-outbox" class="modal-backdrop hidden">
+    <div class="modal-content" style="max-width: 680px; width: 95%;">
+      <div class="modal-header">
+        <h3>🔔 Notification Outbox Monitor</h3>
+        <button id="btn-close-outbox" class="btn-icon">&times;</button>
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+        Transactional outbox events emitted atomically when members cross tier boundaries.
+        These events represent notifications to be sent by the Notification Service.
+      </p>
+      <div id="outbox-event-list" class="outbox-event-list">
+        <div class="outbox-loading">Loading events...</div>
+      </div>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button id="btn-process-outbox" class="btn btn-primary">✉️ Process Pending</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-outbox').classList.add('hidden')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

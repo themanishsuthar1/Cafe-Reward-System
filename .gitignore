@@ -1,0 +1,56 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python version file (managed locally by pyenv/uv)
+.python-version
+
+# UV lock file (optional: commit if you want reproducible installs)
+uv.lock
+
+# Compiled Python files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Test cache
+.pytest_cache/
+.cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Database files (runtime data)
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+
+# AI assistant generated logs/notes
+_AI_LOG.md
+_REASONING.md
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db
