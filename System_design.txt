@@ -1,0 +1,145 @@
+# System Design
+
+## Overview
+
+The **Cafe Reward System** is a FastAPI-based loyalty management application that allows customers to earn and redeem reward points. The system is designed using a **layered architecture** with an **immutable transaction ledger**, ensuring every points transaction is permanently recorded for accuracy, auditability, and data integrity.
+
+The application automatically calculates reward points based on membership tiers, upgrades customers to higher tiers when lifetime point thresholds are reached, and validates all redemption requests using the latest server-side balance. Database operations are executed atomically to prevent inconsistencies during concurrent requests.
+
+---
+
+## Architecture
+
+```
++------------------------------------------------------+
+|                      Web UI                          |
+| Member Lookup | Purchase | Redeem Reward | History   |
++------------------------------------------------------+
+                        |
+                     REST API
+                        |
++------------------------------------------------------+
+|                    FastAPI Routes                    |
+| Purchase | Redemption | Member | Lookup              |
++------------------------------------------------------+
+                        |
++------------------------------------------------------+
+|                  Service Layer                       |
+| PurchaseService | RedemptionService | LookupService  |
++------------------------------------------------------+
+                        |
+        +-------------------------------+
+        |                               |
++----------------------+     +-------------------------+
+|    Domain Layer      |     |     Storage Layer       |
+| Tier Rules           |     | SQLAlchemy Models       |
+| Point Calculation    |     | Repository Pattern      |
+| Business Rules       |     | SQLite Database         |
++----------------------+     +-------------------------+
+```
+
+---
+
+## System Layers
+
+### Presentation Layer
+
+Provides the user interface for member registration, phone number lookup, purchase recording, reward redemption, and transaction history.
+
+### API Layer
+
+Built with FastAPI, exposing REST endpoints for member management, purchases, reward redemption, and member lookup. Request and response validation is handled using Pydantic models.
+
+### Service Layer
+
+Implements the application's business workflows, including purchase processing, point calculation, tier upgrades, reward redemption, balance validation, idempotency handling, and transaction management.
+
+### Domain Layer
+
+Contains pure business logic independent of the database, including point calculation, tier evaluation, and business rules. This layer is fully unit-testable.
+
+### Storage Layer
+
+Uses SQLAlchemy with SQLite to manage members, transactions, reward items, and balance cache. The Repository pattern abstracts database operations and ensures atomic transactions.
+
+---
+
+## Core Components
+
+### Member
+
+Stores customer information including:
+
+* Member ID
+* Name
+* Phone Number
+* Current Tier
+* Join Date
+
+### Transaction Ledger
+
+An immutable append-only ledger that records every purchase and redemption with:
+
+* Transaction ID
+* Member ID
+* Transaction Type
+* Purchase Amount
+* Points Delta
+* Tier at Transaction Time
+* Idempotency Key
+* Timestamp
+
+### Balance Cache
+
+Stores the latest point balance for efficient retrieval while remaining synchronized with the transaction ledger.
+
+### Reward Items
+
+Stores reward information, including reward name, points required, and availability status.
+
+---
+
+## Business Rules
+
+### Points Calculation
+
+```
+Points Earned = floor(Purchase Amount × Tier Multiplier)
+```
+
+### Membership Tiers
+
+| Tier   | Lifetime Points | Multiplier |
+| ------ | --------------- | ---------- |
+| Base   | 0+              | 1.0×       |
+| Silver | 500+            | 1.25×      |
+| Gold   | 1500+           | 1.5×       |
+
+Customers are automatically upgraded when their lifetime earned points reach the required threshold.
+
+---
+
+## Key Design Features
+
+* Layered architecture
+* Immutable append-only transaction ledger
+* Automatic membership tier upgrades
+* Atomic database transactions
+* Idempotent purchase and redemption requests
+* Server-side balance validation
+* Repository pattern for database access
+* Modular and scalable design
+* Comprehensive unit and integration testing
+
+---
+
+## Technology Stack
+
+| Component  | Technology        |
+| ---------- | ----------------- |
+| Backend    | FastAPI           |
+| Language   | Python            |
+| Validation | Pydantic          |
+| ORM        | SQLAlchemy        |
+| Database   | SQLite (WAL Mode) |
+| Testing    | Pytest            |
